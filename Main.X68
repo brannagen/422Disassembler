@@ -291,7 +291,7 @@ SR_CMP:
 *CMPI SUBROUTINE
 *______________
 SR_CMPI:
-    NOP *DO STUFF HERE
+    
              MOVE.B #'C', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
             MOVE.B #'M', (A3)+
             MOVE.B #'P', (A3)+
@@ -348,7 +348,7 @@ SR_OR:
 *ORI SUBROUTINE
 *______________
 SR_ORI:
-    NOP *DO STUFF HERE
+    
             MOVE.B #'O', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
             MOVE.B #'R', (A3)+
             MOVE.B #'I', (A3)+
