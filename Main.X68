@@ -67,9 +67,7 @@ value0000
             BRA MAINLOOP
            
 
-value0001
-value0010
-value0011            
+         
 value0100   CMP.W #$4D71,(A1)   *Check for NOP OPWORD
             BNE N_NOP
             JSR SR_NOP
@@ -80,15 +78,13 @@ N_NOP:
             
 value0101
 value0110
-value0111
 value1000
 value1001
-value1010
 value1011
 value1100
 value1101
 value1110
-value1111
+
 
 *---------------------------------------------------------------
 *Set Text Buffer to Data can't disassemble instruction
@@ -291,7 +287,7 @@ SR_CMP:
 *CMPI SUBROUTINE
 *______________
 SR_CMPI:
-    
+    NOP *DO STUFF HERE
              MOVE.B #'C', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
             MOVE.B #'M', (A3)+
             MOVE.B #'P', (A3)+
@@ -348,7 +344,7 @@ SR_OR:
 *ORI SUBROUTINE
 *______________
 SR_ORI:
-    
+    NOP *DO STUFF HERE
             MOVE.B #'O', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
             MOVE.B #'R', (A3)+
             MOVE.B #'I', (A3)+
