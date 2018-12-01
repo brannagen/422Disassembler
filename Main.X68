@@ -61,45 +61,11 @@ table       dc.l    value0000
 value0000   
             ANDI.W #$0F00,D5              * get 2nd 4 bits
             CMP.B #$0,D5                  *Check for ORI OPWORD 00000000
-            BEQ VALUEORI
+            BEQ SR_ORI
             CMP.B #$C,D5                  *CHECK FOR CMPI OPWORD 1100 = C
-            BEQ VALUECMPI
-            
- 
-ValueORI    MOVE.B #'O', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
-            MOVE.B #'R', (A3)+
-            MOVE.B #'I', (A3)+
-            
-            MOVE.B #'.', (A3)+
-            
-            JSR SIZE            * FUNCTION TO SEE IF BYTE,WORD,LONG TO ADD TO BUFFER
-            
-            MOVE.B #' ', (A3)+
-            MOVE.B #' ', (A3)+
-            
-            MOVE.B #'#', (A3)+
-            
-                                *STILL NEED TO GET EFFECTIVE ADDRESS
-            
-            RTS
-            
-            
-ValueCMPI   MOVE.B #'C', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
-            MOVE.B #'M', (A3)+
-            MOVE.B #'P', (A3)+
-            MOVE.B #'I', (A3)+
-            MOVE.B #'.', (A3)+
-            
-            JSR SIZE            * FUNCTION TO SEE IF BYTE,WORD,LONG TO ADD TO BUFFER
-            
-            MOVE.B #' ', (A3)+
-            MOVE.B #' ', (A3)+
-            
-            MOVE.B #'#', (A3)+
-            
-                                *STILL NEED TO GET EFFECTIVE ADDRESS
-            
-            RTS            
+            BEQ SR_CMPI
+            BRA MAINLOOP
+           
 
 value0001
 value0010
@@ -326,6 +292,22 @@ SR_CMP:
 *______________
 SR_CMPI:
     NOP *DO STUFF HERE
+             MOVE.B #'C', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
+            MOVE.B #'M', (A3)+
+            MOVE.B #'P', (A3)+
+            MOVE.B #'I', (A3)+
+            MOVE.B #'.', (A3)+
+            
+            JSR SIZE            * FUNCTION TO SEE IF BYTE,WORD,LONG TO ADD TO BUFFER
+            
+            MOVE.B #' ', (A3)+
+            MOVE.B #' ', (A3)+
+            
+            MOVE.B #'#', (A3)+
+            
+                                *STILL NEED TO GET EFFECTIVE ADDRESS
+            
+            RTS            
     RTS    
 
 
@@ -367,6 +349,22 @@ SR_OR:
 *______________
 SR_ORI:
     NOP *DO STUFF HERE
+            MOVE.B #'O', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
+            MOVE.B #'R', (A3)+
+            MOVE.B #'I', (A3)+
+            
+            MOVE.B #'.', (A3)+
+            
+            JSR SIZE            * FUNCTION TO SEE IF BYTE,WORD,LONG TO ADD TO BUFFER
+            
+            MOVE.B #' ', (A3)+
+            MOVE.B #' ', (A3)+
+            
+            MOVE.B #'#', (A3)+
+            
+                                *STILL NEED TO GET EFFECTIVE ADDRESS
+            
+            RTS
     RTS 
     
  
