@@ -288,7 +288,7 @@ SR_CMP:
 *______________
 SR_CMPI:
     NOP *DO STUFF HERE
-             MOVE.B #'C', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
+             MOVE.B #'C', (A3)+ * PUT CMPI IN BUFFER TO PRINT TO IO
             MOVE.B #'M', (A3)+
             MOVE.B #'P', (A3)+
             MOVE.B #'I', (A3)+
