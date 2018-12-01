@@ -58,7 +58,49 @@ table       dc.l    value0000
             dc.l    value1111
             
             
-value0000               *Check for CMPI OPWORD
+value0000   
+            ANDI.W #$0F00,D5              * get 2nd 4 bits
+            CMP.B #$0,D5                  *Check for ORI OPWORD 00000000
+            BEQ VALUEORI
+            CMP.B #$C,D5                  *CHECK FOR CMPI OPWORD 1100 = C
+            BEQ VALUECMPI
+            
+ 
+ValueORI    MOVE.B #'O', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
+            MOVE.B #'R', (A3)+
+            MOVE.B #'I', (A3)+
+            
+            MOVE.B #'.', (A3)+
+            
+            JSR SIZE            * FUNCTION TO SEE IF BYTE,WORD,LONG TO ADD TO BUFFER
+            
+            MOVE.B #' ', (A3)+
+            MOVE.B #' ', (A3)+
+            
+            MOVE.B #'#', (A3)+
+            
+                                *STILL NEED TO GET EFFECTIVE ADDRESS
+            
+            RTS
+            
+            
+ValueCMPI   MOVE.B #'C', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
+            MOVE.B #'M', (A3)+
+            MOVE.B #'P', (A3)+
+            MOVE.B #'I', (A3)+
+            MOVE.B #'.', (A3)+
+            
+            JSR SIZE            * FUNCTION TO SEE IF BYTE,WORD,LONG TO ADD TO BUFFER
+            
+            MOVE.B #' ', (A3)+
+            MOVE.B #' ', (A3)+
+            
+            MOVE.B #'#', (A3)+
+            
+                                *STILL NEED TO GET EFFECTIVE ADDRESS
+            
+            RTS            
+
 value0001
 value0010
 value0011            
@@ -430,6 +472,33 @@ SR_JSR:
 SR_RTS:
     NOP *DO STUFF HERE
     RTS     
+******
+*SIZE- GET THE SIZE OF THE OPERATION
+*******
+
+SIZE    LSR.W #6,D5 * SHIFT BITS TO GET THE SIZE POSITION WHICH IS IN 7-6 POSITION
+        
+        CMP.B #$00,D5 * CHECK BYTE 00 = BYTE
+        BEQ SIZEBYTE
+        
+        CMP.B #$01,D5 * CHECK WORD 01  = WORD
+        BEQ SIZEWORD
+        
+        CMP.B #$10,D5 * CHECK LONG 10 = LONG
+        BEQ SIZELONG 
+        
+        RTS
+        
+        
+SIZEBYTE  MOVE.B #'B', (A3)+
+          RTS
+          
+SIZEWORD  MOVE.B #'W', (A3)+
+          RTS
+    
+
+SIZELONG  MOVE.B #'L', (A3)+
+          RTS
 
    
 *EXIT
