@@ -6,26 +6,34 @@ BUFF        EQU $580
 START:                
 
 * MAIN PROGRAM LOOP
+* NOTES:
+*   WARNING: A5, A6, and D7 MUST not be overwritten by subroutines. They are system reserved currently.
 *__________________    
 MAIN:
-    LEA INPSTART,A6
-    LEA INPEND,A7
-    LEA BUFF, A3
+    LEA INPSTART,A5
+    LEA INPEND,A6
     LEA INPSTART,A2
+    MOVE.B  #30,D7
+MAINBADRANGE:
     LEA M_INPSTARTRANGE,A1
     JSR USRINPUT
     LEA M_INPENDRANGE,A1
     LEA INPEND,A2
     JSR USRINPUT
+    MOVEA.L (A5),A5
     MOVEA.L (A6),A6
-    MOVEA.L (A7),A7
+    CMP.L A6,A5
+    BGE MAINBADRANGE
     
 MAINLOOP:
-    CMP.L   A6,A7       *Check for End of Range
-    BLE     EXIT        *Branch to Exit
+    CMP.B   #0,D7
+    BEQ     MAINLOOP_HOLD
+    CMP.L   A5,A6       *Check for End of Range
+    BLT     EXIT        *Branch to Exit
     *MOVEA.L A3,A4       * Buffer
-    MOVE.W  (A6),D6       * Get and move instruction and increment
-    *MOVE.W  #$4D71,D6  *Test!
+    *MOVE.W  #$4D71,(A5) *Test!
+    MOVE.W  (A5),D6       * Get and move instruction and increment
+    
                    
     AND.W   #$F000,D6   *AND to get the first 4 bits
     MOVE.L  #10,D4
@@ -33,9 +41,27 @@ MAINLOOP:
     MOVE.L  D6,A0
 
     MOVE.L  table(A0),A0    *load address of jump point from table using OPCODE
+    SUBI.B  #1,D7
     JMP     (A0)   *jump to corresponding section
                     
-   
+MAINLOOP_HOLD:
+    MOVE.B  #14,D0      *output enter message
+    LEA     M_HOLD,A1
+    TRAP    #15
+ENTER_HOLD:
+    MOVE.B  #5,D0       *Wait for user to press enter
+    TRAP    #15
+    
+    CMP.B   #$D,D1
+    BNE     ENTER_HOLD
+    
+    MOVE.W  #$FF00,D1   *Clear Terminal
+    MOVE.B  #11,D0
+    TRAP    #15
+    
+    MOVE.B  #30,D7      *Reset Counter
+    BRA MAINLOOP
+    
 
 *----------------------------------------------------------
 *Table that will use the 4 bits to jump to the correct instruction
@@ -58,17 +84,23 @@ table       dc.l    value0000
             dc.l    value1111
             
             
-value0000   
-            ANDI.W #$0F00,D5              * get 2nd 4 bits
-            CMP.B #$0,D5                  *Check for ORI OPWORD 00000000
-            BEQ SR_ORI
-            CMP.B #$C,D5                  *CHECK FOR CMPI OPWORD 1100 = C
-            BEQ SR_CMPI
+value0000               *Check for CMPI OPWORD
+            JSR SR_DATA
             BRA MAINLOOP
-           
-
-         
-value0100   CMP.W #$4D71,(A1)   *Check for NOP OPWORD
+            
+value0001
+            JSR SR_DATA
+            BRA MAINLOOP
+            
+value0010
+            JSR SR_DATA
+            BRA MAINLOOP
+            
+value0011
+            JSR SR_DATA
+            BRA MAINLOOP
+            
+value0100   CMP.W #$4E71,(A5)   *Check for NOP OPWORD
             BNE N_NOP
             JSR SR_NOP
             BRA MAINLOOP
@@ -77,19 +109,48 @@ N_NOP:
             BRA MAINLOOP
             
 value0101
+            JSR SR_DATA
+            BRA MAINLOOP
+            
 value0110
+            JSR SR_DATA
+            BRA MAINLOOP
+            
+value0111
+            JSR SR_DATA
+            BRA MAINLOOP
+            
 value1000
+            JSR SR_DATA
+            BRA MAINLOOP
+            
 value1001
+            JSR SR_DATA
+            BRA MAINLOOP
+            
+value1010
+            JSR SR_DATA
+            BRA MAINLOOP
+            
 value1011
+            JSR SR_DATA
+            BRA MAINLOOP
+            
 value1100
+            JSR SR_DATA
+            BRA MAINLOOP
+            
 value1101
+            JSR SR_DATA
+            BRA MAINLOOP
+            
 value1110
-
-
-*---------------------------------------------------------------
-*Set Text Buffer to Data can't disassemble instruction
-*---------------------------------------------------------------
-
+            JSR SR_DATA
+            BRA MAINLOOP
+            
+value1111
+            JSR SR_DATA
+            BRA MAINLOOP
 
 * USER INPUT
 * __________
@@ -189,13 +250,14 @@ NSUB11:
 *_____________
 HEX_STRING_L:
     MOVE.L  LONGNIBBLEMASK,D2
-    MOVE.B  #7,D4
+    MOVE.B  #8,D4
     LEA     STRHEXOUT,A2
     
 HEX_STRING_L_01:
     MOVE.L  D2,D3 *Make a copy of the mask
     AND.L   D1,D3 *And the address with the copy of the mask, overwriting the mask
     MOVE.L  D4,D5
+    SUBI.L  #1,D5
     MULS.W  #4,D5
     LSR.L   D5,D3 *Shift the resultant value to the LSB
     CMP.B   #$9,D3
@@ -209,6 +271,7 @@ HEX_STRING_L_03:
     ADDA.W  #1,A2 *Move the address pointer
     CMP.B   #0,D4
     BNE     HEX_STRING_L_02
+    MOVE.B  #$0,(A2)
     RTS
 HEX_STRING_L_02:
     BRA     HEX_STRING_L_01
@@ -217,14 +280,69 @@ HEX_STRING_L_02:
 *DATA SUBROUTINE
 *_______________ 
 SR_DATA:  
-    NOP *DO STUFF HERE
+    *READ OP WORD AND CONFIRM VALIDITY (Otherwise JSR to DATA and then RTS here.)
+        *Reading OPWORD is pointless here, so it is skipped
+        *DATA requires no validation as it is, well Data.
+    
+    *OUTPUT MEMORY ADDRESS AND OPERATION NAME
+    MOVE.L  A5,D1
+    JSR     HEX_STRING_L
+    LEA     STRHEXOUT,A1
+    MOVE.B  #14,D0
+    TRAP    #15             *Output Address
+    MOVE.L  #$09444154,(A1)
+    MOVEA.L A1,A2
+    ADDA.W  #4,A2
+    MOVE.L  #$41090000,(A2)
+    TRAP    #15             *Output Operation name
+    
+    
+    
+    *BRANCH FOR <EA> MODE AND OUTPUT ARGUMENTS
+        *No EA for DATA, thus no branching here
+    MOVE.W  (A5),D1
+    SWAP    D1
+    JSR     HEX_STRING_L
+    LEA     STRHEXOUT,A1
+    MOVEA.L A1,A2
+    ADDA.W  #4,A2
+    MOVE.B  #$0,(A2)
+    MOVE.B  #13,D0
+    TRAP    #15             *Output Invalid Data found at current working word to terminal
+    *MOVE ADDRESS POINTER TO NEXT OPWORD
+    ADDA.W  #2,A5
+    
+    *RTS
     RTS 
     
     
 *NOP SUBROUTINE
 *______________
 SR_NOP:
-    NOP *DO STUFF HERE
+    *READ OP WORD AND CONFIRM VALIDITY (Otherwise JSR to DATA and then RTS here.)
+        *Reading OPWORD is pointless here, so it is skipped
+        *As this must be exactly NOP to get here, no validation is necessary.
+    
+    *OUTPUT MEMORY ADDRESS AND OPERATION NAME
+    MOVE.L  A5,D1
+    JSR     HEX_STRING_L
+    LEA     STRHEXOUT,A1
+    MOVE.B  #14,D0 *TRAP TASK 14, Output A1 with no Carriage Return of Line Feed
+    TRAP    #15
+    MOVE.L  #$094E4F50,(A1)
+    MOVEA.L A1,A2
+    ADDA.W  #4,A2
+    MOVE.B  #$0,(A2)
+    MOVE.B  #13,D0
+    TRAP    #15
+    
+    *BRANCH FOR <EA> MODE AND OUTPUT ARGUMENTS
+        *No branching is necessary as there are no arguments for NOP
+    
+    *MOVE ADDRESS POINTER TO NEXT OPWORD
+    ADDA.W  #2,A5
+    
+    *RTS
     RTS   
  
  
@@ -287,23 +405,7 @@ SR_CMP:
 *CMPI SUBROUTINE
 *______________
 SR_CMPI:
-   
-             MOVE.B #'C', (A3)+ * PUT CMPI IN BUFFER TO PRINT TO IO
-            MOVE.B #'M', (A3)+
-            MOVE.B #'P', (A3)+
-            MOVE.B #'I', (A3)+
-            MOVE.B #'.', (A3)+
-            
-            JSR SIZE            * FUNCTION TO SEE IF BYTE,WORD,LONG TO ADD TO BUFFER
-            
-            MOVE.B #' ', (A3)+
-            MOVE.B #' ', (A3)+
-            
-            MOVE.B #'#', (A3)+
-            
-                                *STILL NEED TO GET EFFECTIVE ADDRESS
-            
-            RTS            
+    NOP *DO STUFF HERE
     RTS    
 
 
@@ -344,23 +446,7 @@ SR_OR:
 *ORI SUBROUTINE
 *______________
 SR_ORI:
-  
-            MOVE.B #'O', (A3)+ * PUT ORI IN BUFFER TO PRINT TO IO
-            MOVE.B #'R', (A3)+
-            MOVE.B #'I', (A3)+
-            
-            MOVE.B #'.', (A3)+
-            
-            JSR SIZE            * FUNCTION TO SEE IF BYTE,WORD,LONG TO ADD TO BUFFER
-            
-            MOVE.B #' ', (A3)+
-            MOVE.B #' ', (A3)+
-            
-            MOVE.B #'#', (A3)+
-            
-                                *STILL NEED TO GET EFFECTIVE ADDRESS
-            
-            RTS
+    NOP *DO STUFF HERE
     RTS 
     
  
@@ -466,40 +552,15 @@ SR_JSR:
 SR_RTS:
     NOP *DO STUFF HERE
     RTS     
-******
-*SIZE- GET THE SIZE OF THE OPERATION
-*******
-
-SIZE    LSR.W #6,D5 * SHIFT BITS TO GET THE SIZE POSITION WHICH IS IN 7-6 POSITION
-        
-        CMP.B #$00,D5 * CHECK BYTE 00 = BYTE
-        BEQ SIZEBYTE
-        
-        CMP.B #$01,D5 * CHECK WORD 01  = WORD
-        BEQ SIZEWORD
-        
-        CMP.B #$10,D5 * CHECK LONG 10 = LONG
-        BEQ SIZELONG 
-        
-        RTS
-        
-        
-SIZEBYTE  MOVE.B #'B', (A3)+
-          RTS
-          
-SIZEWORD  MOVE.B #'W', (A3)+
-          RTS
-    
-
-SIZELONG  MOVE.B #'L', (A3)+
-          RTS
 
    
 *EXIT
 *____
 EXIT:
-    NOP *REPLACE WITH EOF OUTPUT
-    
+    LEA     STRHEXOUT,A1
+    MOVE.L  #$454F4600,(A1)
+    MOVE.B  #14,D0
+    TRAP    #15
 
     
     
@@ -511,11 +572,14 @@ LONGNIBBLEMASK      DC.L    $F0000000
 M_INPSTARTRANGE     DC.B    'Enter Start Range of Memory',CR,LF,0
 M_INPENDRANGE       DC.B    'Enter End Range of Memory',CR,LF,0
 M_INPINVALID        DC.B    'Input is invalid, try again',CR,LF,0
+M_HOLD              DC.B    'Press Enter to scroll',0
     ORG     $500
     DC.L    8
     ORG     $520
     DC.L    8
     END     START
+
+
 
 
 
